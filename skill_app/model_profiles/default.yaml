@@ -1,0 +1,33 @@
+profiles:
+  local-default:
+    provider: fake
+    model: fake-deterministic-v1
+    temperature: 0
+    context_window: 8192
+    supports_tools: false
+    supports_vision: false
+    timeout_seconds: 30
+
+  ollama-qwen3-14b:
+    provider: openai_compatible
+    model: qwen3:14b
+    base_url: http://127.0.0.1:11434/v1
+    temperature: 0
+    context_window: 40960
+    supports_tools: true
+    supports_vision: false
+    supports_structured_outputs: true
+    reasoning_effort: none
+    max_output_tokens: 8192
+    timeout_seconds: 600
+
+  local-openai-compatible:
+    provider: openai_compatible
+    model: local-model
+    base_url: http://127.0.0.1:11434/v1
+    api_key_env: SKILL_APP_LOCAL_MODEL_API_KEY
+    temperature: 0
+    context_window: 32768
+    supports_tools: false
+    supports_vision: false
+    timeout_seconds: 120

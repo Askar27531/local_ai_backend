@@ -1,0 +1,40 @@
+schema_version: 1
+name: code-generator
+version: 1.0.0
+kind: agent
+status: draft
+model:
+  instruction: SKILL.md
+  profile:
+  output_schema: code_generation_result
+agents:
+  generator: code_generator
+tools:
+  allow:
+    - read_project_file
+    - read_file_range
+    - search_project_text
+    - write_workspace_file
+    - apply_code_patch
+    - create_unified_diff
+    - run_python_compile
+data_policy:
+  read: ["**/*.py"]
+  write: ["generated/**/*.py"]
+  deny: ["**/*.db", "**/.env"]
+limits:
+  max_files: 1
+  max_changed_lines: 400
+  max_model_calls: 4
+  tool_timeout_seconds: 120
+validators:
+  pre: [task_is_running, workspace_is_active]
+  output: [structured_output]
+  post: [python_compile]
+approval:
+  delivery_required: true
+retry:
+  model_parse_attempts: 2
+  tool_attempts: 1
+  repair_attempts: 0
+  backoff_seconds: [1, 3]

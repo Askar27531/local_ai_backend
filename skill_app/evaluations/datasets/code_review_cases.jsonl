@@ -1,0 +1,10 @@
+{"id":"review_01","content":"def build():\n    return eval('1+1')\n","expected_categories":["security"],"expected_blocking":true}
+{"id":"review_02","content":"def build():\n    exec('x=1')\n    return {'enabled': True}\n","expected_categories":["security"],"expected_blocking":true}
+{"id":"review_03","content":"def build():\n    # TODO finish\n    return {'enabled': True}\n","expected_categories":["completeness"],"expected_blocking":true}
+{"id":"review_04","content":"def build():\n    return {'enabled': True}\n","expected_categories":[],"expected_blocking":false}
+{"id":"review_05","content":"def build():\n    return {'enabled': True, 'feature_id': 'x'}\n","expected_categories":[],"expected_blocking":false}
+{"id":"review_06","content":"def build():\n    return eval('2+2')\n","expected_categories":["security"],"expected_blocking":true}
+{"id":"review_07","content":"def build():\n    # TODO remove placeholder\n    return {'enabled': True}\n","expected_categories":["completeness"],"expected_blocking":true}
+{"id":"review_08","content":"def build():\n    return {'enabled': True}\n","expected_categories":[],"expected_blocking":false}
+{"id":"review_09","content":"def build():\n    exec('print(1)')\n    return {'enabled': True}\n","expected_categories":["security"],"expected_blocking":true}
+{"id":"review_10","content":"def build():\n    return {'feature_id': 'ok', 'enabled': True}\n","expected_categories":[],"expected_blocking":false}

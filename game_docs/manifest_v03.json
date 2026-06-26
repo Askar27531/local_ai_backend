@@ -1,0 +1,37 @@
+{
+  "project": "归潮之岛",
+  "version": "v0.3",
+  "ingest_recommended": [
+    "vectorized/01_world_lore_世界观.md",
+    "vectorized/02_crystal_vein_水晶矿脉.md",
+    "vectorized/03_indigenous_people_原住民与岛屿社会.md",
+    "vectorized/04_shadow_organization_反政府科技组织.md",
+    "vectorized/05_player_background_主人公背景.md",
+    "vectorized/06_locations_地点设定.md",
+    "vectorized/08_items_道具与线索.md",
+    "vectorized/10_hidden_truth_隐藏真相.md",
+    "vectorized/13_npc_memories_记忆与传闻.md",
+    "vectorized/14_npc_relationships_人物关系网.md",
+    "vectorized/15_timeline_岛屿时间线.md",
+    "vectorized/16_daily_life_静潮村日常.md",
+    "vectorized/17_npc_personal_arcs_个人经历链.md",
+    "vectorized/18_rumor_pool_村中传闻.md",
+    "vectorized/19_dialogue_examples_NPC对话样例.md",
+    "vectorized/20_village_events_村庄事件.md",
+    "vectorized/21_environmental_storytelling_环境叙事.md",
+    "vectorized/22_ending_reactions_结局反应.md",
+    "vectorized/23_rumor_truth_layers_传闻真相分层.md",
+    "vectorized/24_player_choice_consequences_玩家行为后果.md"
+  ],
+  "do_not_ingest": [
+    "non_vectorized/A_README_使用说明.md",
+    "non_vectorized/B_npc_profiles_角色档案.md",
+    "non_vectorized/C_quest_guide_任务线.md",
+    "non_vectorized/D_rag_metadata_schema_RAG元数据设计.md",
+    "non_vectorized/E_npc_prompt_rules_NPC回答规则.md",
+    "non_vectorized/F_CHANGELOG_阶段问题与修改建议.md"
+  ],
+  "files": [
+    "npc_knowledge_matrix_v03.json"
+  ]
+}

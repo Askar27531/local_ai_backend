@@ -1,0 +1,36 @@
+schema_version: 1
+name: game-config-generator
+version: 1.0.0
+kind: deterministic
+status: draft
+model:
+  instruction: SKILL.md
+  profile:
+  output_schema: candidate_spec
+agents:
+  generator: code_generator
+tools:
+  allow:
+    - validate_yaml
+    - validate_json
+    - validate_npc_behavior_config
+data_policy:
+  read: ["generated/**/*.yaml"]
+  write: ["generated/**/*.yaml", "generated/**/*.json"]
+  deny: ["**/*.db", "**/.env"]
+limits:
+  max_files: 3
+  max_changed_lines: 400
+  max_model_calls: 1
+  tool_timeout_seconds: 60
+validators:
+  pre: [task_is_running, workspace_is_active]
+  output: [structured_output]
+  post: []
+approval:
+  delivery_required: true
+retry:
+  model_parse_attempts: 0
+  tool_attempts: 1
+  repair_attempts: 0
+  backoff_seconds: [1, 3]

@@ -1,0 +1,72 @@
+schema_version: 1
+name: npc-app-feature
+version: 1.0.0
+kind: workflow
+status: active
+
+model:
+  instruction: SKILL.md
+  profile:
+  output_schema: npc_app_patch_result
+
+workflow:
+  name: npc_app_feature
+  version: "1"
+  max_repairs: 2
+
+agents:
+  generator: code_generator
+  tester: test_agent
+  reviewer: review_agent
+
+tools:
+  allow:
+    - read_project_file
+    - read_file_range
+    - search_project_text
+    - write_workspace_file
+    - apply_code_patch
+    - create_unified_diff
+    - run_python_compile
+    - run_pytest
+
+data_policy:
+  read:
+    - npc_app/**
+  write:
+    - npc_app/**
+  deny:
+    - "**/*.db"
+    - "**/.env"
+    - game_docs/**
+    - skill_app/**
+
+limits:
+  max_files: 5
+  max_changed_lines: 1200
+  max_model_calls: 8
+  tool_timeout_seconds: 180
+
+validators:
+  pre:
+    - task_is_running
+    - workspace_is_active
+  output:
+    - structured_output
+    - npc_app_patch_paths
+    - affected_files_match
+    - expected_hashes_match
+  post:
+    - python_compile
+    - focused_pytest
+    - semantic_review
+
+approval:
+  plan_required: false
+  delivery_required: true
+
+retry:
+  model_parse_attempts: 2
+  tool_attempts: 1
+  repair_attempts: 2
+  backoff_seconds: [1, 3]

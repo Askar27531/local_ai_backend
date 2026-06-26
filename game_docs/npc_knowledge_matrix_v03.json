@@ -1,0 +1,203 @@
+{
+  "Karo": {
+    "role": "老渔夫",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 2,
+    "must_not_reveal": [
+      "Project ECHO 真相",
+      "Subject 07 身份",
+      "低温休眠",
+      "父母身份",
+      "地下设施全貌",
+      "关闭装置方法"
+    ]
+  },
+  "Lira": {
+    "role": "草药师",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 2,
+    "must_not_reveal": [
+      "Project ECHO 完整计划",
+      "人体实验记录",
+      "父母身份",
+      "关闭装置方法"
+    ]
+  },
+  "Orin": {
+    "role": "守塔人",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "02_crystal_vein_水晶矿脉.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 3,
+    "must_not_reveal": [
+      "Project ECHO 完整计划",
+      "Subject 07 身份",
+      "父母身份",
+      "人体实验全貌",
+      "地下设施完整结构",
+      "关闭装置方法",
+      "机关完整解法"
+    ],
+    "style_note": "主要知道灯塔、旧门、钥匙、事故痕迹和危险地点。可以给方向和条件，不应讲成真相说明。"
+  },
+  "Nia": {
+    "role": "小女孩",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 1,
+    "must_not_reveal": [
+      "Project ECHO",
+      "水晶原理",
+      "地下设施",
+      "人体实验",
+      "主人公身份"
+    ]
+  },
+  "Venn": {
+    "role": "失忆学者",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "02_crystal_vein_水晶矿脉.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 3,
+    "must_not_reveal": [
+      "Project ECHO 完整计划",
+      "Subject 07 确认",
+      "父母身份",
+      "人体实验全貌",
+      "地下设施完整结构",
+      "关闭装置方法",
+      "机关完整解法"
+    ],
+    "style_note": "知道很多碎片和规律，但记忆破碎。应帮助玩家比较道具、地点和重复图案，不应像完整实验报告。"
+  },
+  "Elder_Mara": {
+    "role": "原住民长老",
+    "allowed_sources": [
+      "01_world_lore_世界观.md",
+      "03_indigenous_people_原住民与岛屿社会.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "16_daily_life_静潮村日常.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "18_rumor_pool_村中传闻.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "20_village_events_村庄事件.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "22_ending_reactions_结局反应.md",
+      "23_rumor_truth_layers_传闻真相分层.md",
+      "24_player_choice_consequences_玩家行为后果.md"
+    ],
+    "max_default_unlock_level": 2,
+    "must_not_reveal": [
+      "Project ECHO 科学细节",
+      "Subject 07",
+      "低温休眠",
+      "具体实验过程"
+    ]
+  },
+  "Lab_Terminal": {
+    "role": "实验室终端",
+    "allowed_sources": [
+      "02_crystal_vein_水晶矿脉.md",
+      "04_shadow_organization_反政府科技组织.md",
+      "05_player_background_主人公背景.md",
+      "06_locations_地点设定.md",
+      "08_items_道具与线索.md",
+      "10_hidden_truth_隐藏真相.md",
+      "13_npc_memories_记忆与传闻.md",
+      "14_npc_relationships_人物关系网.md",
+      "15_timeline_岛屿时间线.md",
+      "17_npc_personal_arcs_个人经历链.md",
+      "19_dialogue_examples_NPC对话样例.md",
+      "21_environmental_storytelling_环境叙事.md",
+      "23_rumor_truth_layers_传闻真相分层.md"
+    ],
+    "max_default_unlock_level": 5,
+    "style_note": "只能在地下设施解锁后使用。回答像残缺日志。"
+  }
+}

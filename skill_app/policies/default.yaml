@@ -1,0 +1,111 @@
+agents:
+  planner:
+    allow:
+      - list_project_files
+      - search_project_text
+      - read_project_file
+      - read_file_range
+      - validate_json
+      - validate_yaml
+      - validate_json_schema
+      - validate_npc_behavior_config
+
+  code_generator:
+    allow:
+      - list_project_files
+      - search_project_text
+      - read_project_file
+      - read_file_range
+      - write_workspace_file
+      - create_unified_diff
+      - apply_patch_to_workspace
+      - apply_code_patch
+      - validate_json
+      - validate_yaml
+      - validate_json_schema
+      - validate_npc_behavior_config
+      - run_python_compile
+
+  test_agent:
+    allow:
+      - list_project_files
+      - search_project_text
+      - read_project_file
+      - read_file_range
+      - write_workspace_file
+      - run_python_compile
+      - run_pytest
+      - validate_json
+      - validate_yaml
+      - validate_json_schema
+      - validate_npc_behavior_config
+
+  review_agent:
+    allow:
+      - list_project_files
+      - search_project_text
+      - read_project_file
+      - read_file_range
+      - create_unified_diff
+      - validate_json
+      - validate_yaml
+      - validate_json_schema
+      - validate_npc_behavior_config
+
+  npc_app_feature:
+    allow:
+      - read_project_file
+      - read_file_range
+      - search_project_text
+      - write_workspace_file
+      - apply_code_patch
+      - create_unified_diff
+      - run_python_compile
+
+  npc_app_test:
+    allow:
+      - read_project_file
+      - read_file_range
+      - write_workspace_file
+      - run_python_compile
+      - run_pytest
+
+  npc_app_review:
+    allow:
+      - read_project_file
+      - read_file_range
+      - create_unified_diff
+
+  game_text_writer:
+    allow:
+      - read_project_file
+      - read_file_range
+      - search_project_text
+      - write_workspace_file
+      - create_unified_diff
+
+  lore_reviewer:
+    allow:
+      - read_project_file
+      - read_file_range
+      - search_project_text
+      - create_unified_diff
+
+  foundation_agent:
+    allow:
+      - validate_json
+      - validate_yaml
+      - validate_json_schema
+      - validate_npc_behavior_config
+
+  art_brief_agent:
+    allow:
+      - list_project_files
+      - search_project_text
+      - read_project_file
+      - validate_image
+
+  art_asset_agent:
+    allow:
+      - generate_image_candidates
+      - validate_image

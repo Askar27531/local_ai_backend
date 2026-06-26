@@ -1,0 +1,43 @@
+schema_version: 1
+name: art-asset-generator
+version: 1.0.0
+kind: workflow
+status: draft
+model:
+  instruction: SKILL.md
+  profile:
+  output_schema: visual_brief
+workflow:
+  name: art_asset
+  version: "1"
+  max_repairs: 0
+agents:
+  brief: art_brief_agent
+  generator: art_asset_agent
+tools:
+  allow:
+    - read_project_file
+    - search_project_text
+    - generate_image_candidates
+    - validate_image
+data_policy:
+  read: ["**/*"]
+  write: ["generated/art/**"]
+  deny: ["**/*.db", "**/.env"]
+limits:
+  max_files: 6
+  max_changed_lines: 1
+  max_model_calls: 2
+  tool_timeout_seconds: 180
+validators:
+  pre: [task_is_running, workspace_is_active]
+  output: [structured_output]
+  post: []
+approval:
+  plan_required: false
+  delivery_required: true
+retry:
+  model_parse_attempts: 1
+  tool_attempts: 1
+  repair_attempts: 0
+  backoff_seconds: [1, 3]

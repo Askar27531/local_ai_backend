@@ -1,0 +1,28 @@
+[tool.pytest.ini_options]
+testpaths = ["skill_app/tests"]
+python_files = ["test_*.py"]
+addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["skill_app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = [
+    ".venv",
+    "__pycache__",
+    "skill_app/db/migrations/versions",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"skill_app/main.py" = ["B008"]
+"skill_app/tests/**/*.py" = ["S101"]

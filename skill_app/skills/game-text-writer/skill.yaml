@@ -1,0 +1,78 @@
+schema_version: 1
+name: game-text-writer
+version: 1.0.0
+kind: workflow
+status: active
+
+model:
+  instruction: SKILL.md
+  profile:
+  output_schema: game_text_candidate_set
+
+components:
+  - lore-reviewer
+
+stages:
+  writer:
+    skill: game-text-writer
+    profile:
+    output_schema: game_text_candidate_set
+  reviewer:
+    skill: lore-reviewer
+    profile:
+    output_schema: game_text_review_result
+
+workflow:
+  name: game_text_production
+  version: "1"
+  max_repairs: 2
+
+agents:
+  writer: game_text_writer
+  reviewer: lore_reviewer
+
+tools:
+  allow:
+    - read_project_file
+    - read_file_range
+    - search_project_text
+    - write_workspace_file
+    - create_unified_diff
+
+data_policy:
+  read:
+    - game_docs/**/*.md
+  write:
+    - game_docs/**/*.md
+  deny:
+    - "**/*.db"
+    - "**/.env"
+
+limits:
+  max_files: 5
+  max_changed_lines: 1000
+  max_model_calls: 12
+  tool_timeout_seconds: 60
+
+validators:
+  pre:
+    - task_is_running
+    - workspace_is_active
+  output:
+    - structured_output
+    - game_text_candidate_path
+    - game_text_source_paths
+    - game_text_content_limit
+  post:
+    - game_text_validation
+    - lore_review
+
+approval:
+  plan_required: false
+  delivery_required: true
+
+retry:
+  model_parse_attempts: 2
+  tool_attempts: 1
+  repair_attempts: 2
+  backoff_seconds: [1, 3]

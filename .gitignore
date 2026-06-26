@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+.DS_Store
+.vscode/
+.idea/
+
+# skill_app runtime data
+.skill_app_data/
+.tmp_skill_app_*.sqlite3
