@@ -1,36 +1,54 @@
+"""长期记忆的业务事实、召回回退、摘要更新与 Milvus 同步。
+
+PostgreSQL 保存原始记忆记录和线程摘要；Milvus 为这些记录建立可丢失、可重建的语义索引。
+结构化 Unity 状态可产生 player_fact，对话中的模型提取只能产生较低信任的 player_claim
+等记忆类型。
+"""
+
 from __future__ import annotations
 
-import json
 import os
-import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy.orm import Session
 
-from npc_app.db.models import NpcChatRecord, NpcChatThread, NpcMemoryItem, NpcThreadMemory
+from npc_app.contracts import UnityNpcTurnRequest
+from npc_app.database import NpcChatRecord, NpcChatThread, NpcMemoryItem, NpcThreadMemory
 from npc_app.services.llm_service import llm
-
+from npc_app.utils import dialogue_config, extract_json_object, message_text, search_terms, truncate_text
 
 NPC_MEMORY_UPDATE_INTERVAL = int(os.getenv("NPC_MEMORY_UPDATE_INTERVAL", "6"))
 NPC_MEMORY_MAX_RECORDS_PER_UPDATE = int(os.getenv("NPC_MEMORY_MAX_RECORDS_PER_UPDATE", "12"))
 NPC_THREAD_SUMMARY_MAX_CHARS = int(os.getenv("NPC_THREAD_SUMMARY_MAX_CHARS", "500"))
 NPC_MEMORY_RETRIEVAL_CANDIDATE_LIMIT = int(os.getenv("NPC_MEMORY_RETRIEVAL_CANDIDATE_LIMIT", "80"))
+_MEMORY_EXTRACTION_CONFIG = dialogue_config()["memory_extraction"]
 
 
 @dataclass
 class RetrievedMemoryItem:
+    """统一表示来自 Milvus 或 PostgreSQL 回退检索的一条长期记忆。
+
+    importance 是写入时的长期重要度，score 是针对当前问题的召回相关性；两者会在
+    Context Compiler 中再次组合，但不会改变 memory_type 所表达的可信等级。
+    """
+
     memory_type: str
     content: str
     keywords: str = ""
     importance: int = 3
     score: float = 0.0
 
+    def __post_init__(self) -> None:
+        if not 1 <= self.importance <= 5:
+            raise ValueError("memory importance must be between 1 and 5")
+
 
 @dataclass
 class MemoryContext:
+    """提供给单轮编排器的线程摘要和相关长期记忆集合。"""
+
     summary: str = ""
     items: list[RetrievedMemoryItem] = field(default_factory=list)
 
@@ -41,19 +59,12 @@ def get_memory_context(
     question: str,
     limit: int = 5,
 ) -> MemoryContext:
+    """组合线程连续性摘要和与当前问题相关的长期记忆。"""
+    memory = db.query(NpcThreadMemory).filter(NpcThreadMemory.thread_id == thread.id).first()
     return MemoryContext(
-        summary=get_thread_memory_summary(db, thread.id),
+        summary=memory.summary if memory else "",
         items=retrieve_memory_items(db, thread, question, limit=limit),
     )
-
-
-def get_thread_memory_summary(db: Session, thread_id: str) -> str:
-    memory = (
-        db.query(NpcThreadMemory)
-        .filter(NpcThreadMemory.thread_id == thread_id)
-        .first()
-    )
-    return memory.summary if memory else ""
 
 
 def retrieve_memory_items(
@@ -62,6 +73,7 @@ def retrieve_memory_items(
     question: str,
     limit: int = 5,
 ) -> list[RetrievedMemoryItem]:
+    """优先使用 Milvus 语义召回；无结果时回退到 PostgreSQL 关键词评分。"""
     from npc_app.services.memory_milvus_service import retrieve_memory_items_from_milvus
 
     milvus_items = retrieve_memory_items_from_milvus(
@@ -71,27 +83,27 @@ def retrieve_memory_items(
         question=question,
         limit=limit,
     )
+    # PostgreSQL 保存业务真相，因此语义索引不可用或无命中时仍可提供有限的记忆能力。
     if milvus_items:
         return milvus_items
 
+    # 回退只扫描近期高重要度候选上限，避免线程增长后每次请求全表计算关键词重叠。
     candidates = (
         db.query(NpcMemoryItem)
-        .filter(
-            NpcMemoryItem.thread_id == thread.id,
-            NpcMemoryItem.npc_id == thread.npc_id,
-        )
-        .order_by(NpcMemoryItem.importance.desc(), NpcMemoryItem.last_seen_at.desc())
+        .filter(NpcMemoryItem.thread_id == thread.id)
+        .order_by(NpcMemoryItem.importance.desc(), NpcMemoryItem.id.desc())
         .limit(NPC_MEMORY_RETRIEVAL_CANDIDATE_LIMIT)
         .all()
     )
-    query_terms = _extract_terms(question)
+    query_terms = search_terms(question)
     scored: list[RetrievedMemoryItem] = []
     for item in candidates:
         haystack = f"{item.content} {item.keywords}"
-        item_terms = _extract_terms(haystack)
+        item_terms = search_terms(haystack)
         overlap = len(query_terms.intersection(item_terms))
         if query_terms and overlap == 0 and item.importance < 5:
             continue
+        # 当前问题词项重叠权重大于 importance，使“现在相关”优先于“长期重要但无关”。
         score = overlap * 3.0 + min(max(item.importance, 1), 5)
         scored.append(
             RetrievedMemoryItem(
@@ -106,8 +118,16 @@ def retrieve_memory_items(
 
 
 def maybe_update_thread_memory(db: Session, thread: NpcChatThread) -> None:
+    """累计足够的新对话后，分批更新线程摘要和结构化长期记忆。"""
     memory = _get_or_create_memory(db, thread)
-    latest_record_id = _latest_record_id(db, thread.id)
+    latest_record = (
+        db.query(NpcChatRecord)
+        .filter(NpcChatRecord.thread_id == thread.id)
+        .order_by(NpcChatRecord.id.desc())
+        .first()
+    )
+    # last_record_id 是增量游标；已消费过的问答不会重复进入摘要或重复提取记忆。
+    latest_record_id = int(latest_record.id) if latest_record else 0
     if latest_record_id <= memory.last_record_id:
         return
 
@@ -119,9 +139,11 @@ def maybe_update_thread_memory(db: Session, thread: NpcChatThread) -> None:
         )
         .count()
     )
+    # 摘要不是每轮生成，按间隔批处理可控制额外 LLM 调用成本。
     if pending_count < NPC_MEMORY_UPDATE_INTERVAL:
         return
 
+    # 单次只消费有限批次，长时间未更新的线程可在后续成功回合继续推进游标。
     records = (
         db.query(NpcChatRecord)
         .filter(
@@ -136,20 +158,44 @@ def maybe_update_thread_memory(db: Session, thread: NpcChatThread) -> None:
         return
 
     update = _build_memory_update(thread.npc_id, memory.summary, records)
-    memory.summary = _truncate(update.summary, NPC_THREAD_SUMMARY_MAX_CHARS)
+    memory.summary = truncate_text(update.summary, NPC_THREAD_SUMMARY_MAX_CHARS)
     memory.last_record_id = records[-1].id
-    memory.updated_at = datetime.now()
-    _upsert_memory_items(db, thread, records[-1].id, update.items)
+    _upsert_memory_items(db, thread, update.items)
+    db.commit()
+
+
+def record_confirmed_turn_memories(
+    db: Session,
+    thread: NpcChatThread,
+    req: UnityNpcTurnRequest,
+) -> None:
+    """只把本轮 Unity 结构化状态确认的事实以 player_fact 持久化。"""
+    items = [
+        {
+            "type": "player_fact",
+            "content": f"玩家曾向当前 NPC 展示物品：{item_id}",
+            "keywords": [item_id, "presented_item"],
+            "importance": 4,
+        }
+        for item_id in dict.fromkeys(req.player.presented_items)
+        if item_id.strip()
+    ]
+    if not items:
+        return
+    _upsert_memory_items(db, thread, items, allow_player_fact=True)
     db.commit()
 
 
 @dataclass
 class _MemoryUpdate:
+    """一次 LLM 记忆提取返回的滚动摘要与候选结构化条目。"""
+
     summary: str
     items: list[dict[str, Any]]
 
 
 def _get_or_create_memory(db: Session, thread: NpcChatThread) -> NpcThreadMemory:
+    """取得线程唯一摘要行；新建时仅 flush 以加入调用方当前事务。"""
     memory = (
         db.query(NpcThreadMemory)
         .filter(NpcThreadMemory.thread_id == thread.id)
@@ -159,23 +205,11 @@ def _get_or_create_memory(db: Session, thread: NpcChatThread) -> NpcThreadMemory
         return memory
 
     memory = NpcThreadMemory(
-        user_id=thread.user_id,
         thread_id=thread.id,
-        npc_id=thread.npc_id,
     )
     db.add(memory)
     db.flush()
     return memory
-
-
-def _latest_record_id(db: Session, thread_id: str) -> int:
-    record = (
-        db.query(NpcChatRecord)
-        .filter(NpcChatRecord.thread_id == thread_id)
-        .order_by(NpcChatRecord.id.desc())
-        .first()
-    )
-    return int(record.id) if record else 0
 
 
 def _build_memory_update(
@@ -183,22 +217,15 @@ def _build_memory_update(
     previous_summary: str,
     records: list[NpcChatRecord],
 ) -> _MemoryUpdate:
+    """让 LLM 从新增对话中提取摘要和候选记忆，但不在这里提升其可信等级。"""
     dialogue_text = "\n".join(
         f"玩家：{record.question}\n{npc_id}：{record.answer}"
         for record in records
     )
+    # 旧摘要与本批新增问答同时提供，模型生成滚动摘要而非孤立的批次摘要。
     prompt = "\n".join(
         [
-            "请为游戏 NPC 对话更新长期记忆。",
-            "输出必须是 JSON，不要包裹 markdown，不要输出解释。",
-            "JSON 格式：",
-            '{"summary":"不超过250字的线程概览","items":[{"type":"player_fact|npc_disclosed|unresolved_question|relationship_signal","content":"一条可检索长期记忆","keywords":["关键词"],"importance":1-5}]}',
-            "",
-            "规则：",
-            "- 只记录这个 NPC 与玩家之间已经发生、已经说出口的信息。",
-            "- 不要新增设定，不要剧透未解锁真相，不要把猜测写成事实。",
-            "- items 每条必须短，最多 60 字；最多输出 8 条。",
-            "- summary 是极短概览，不是完整历史。",
+            *_MEMORY_EXTRACTION_CONFIG["instructions"],
             "",
             f"当前 NPC：{npc_id}",
             "",
@@ -209,12 +236,13 @@ def _build_memory_update(
     )
     response = llm.invoke(
         [
-            SystemMessage(content="你负责维护游戏 NPC 的可检索长期记忆。"),
+            SystemMessage(content=str(_MEMORY_EXTRACTION_CONFIG["system_prompt"])),
             HumanMessage(content=prompt),
         ]
     )
-    content = _message_to_text(response)
-    data = _parse_json_object(content)
+    content = message_text(response)
+    # 记忆是派生能力，非严格解析失败时保留旧摘要并忽略条目，不影响已经生成的回答。
+    data = extract_json_object(content, strict=False)
     summary = str(data.get("summary") or previous_summary or "").strip()
     items = data.get("items", [])
     if not isinstance(items, list):
@@ -225,11 +253,14 @@ def _build_memory_update(
 def _upsert_memory_items(
     db: Session,
     thread: NpcChatThread,
-    source_record_id: int,
     items: list[dict[str, Any]],
+    *,
+    allow_player_fact: bool = False,
 ) -> None:
+    """规范化并写入 PostgreSQL，再把同一业务记录同步到 Milvus 索引。"""
+    # 每次更新限制候选数量，并在服务边界统一裁剪内容、关键词和 importance。
     for raw_item in items[:8]:
-        content = _truncate(str(raw_item.get("content") or "").strip(), 180)
+        content = truncate_text(str(raw_item.get("content") or "").strip(), 180)
         if not content:
             continue
         existing = (
@@ -245,88 +276,55 @@ def _upsert_memory_items(
             keywords = ", ".join(str(keyword) for keyword in keywords_value[:8])
         else:
             keywords = str(keywords_value or "")
-        importance = _coerce_importance(raw_item.get("importance", 3))
-        memory_type = str(raw_item.get("type") or "fact")[:50]
+        keywords = truncate_text(keywords, 512)
+        try:
+            importance = int(raw_item.get("importance", 3))
+        except (TypeError, ValueError):
+            importance = 3
+        importance = min(max(importance, 1), 5)
+        memory_type = _normalize_memory_type(raw_item.get("type"), allow_player_fact)
 
+        # 内容相同视为同一业务记忆：合并关键词、只提高重要度，再刷新向量索引。
         if existing:
             existing.keywords = keywords or existing.keywords
             existing.importance = max(existing.importance, importance)
-            existing.last_seen_at = datetime.now()
             db.flush()
-            _sync_memory_item_to_milvus(existing)
+            _sync_memory_item_to_milvus(existing, thread)
             continue
 
         memory_item = NpcMemoryItem(
-            user_id=thread.user_id,
             thread_id=thread.id,
-            npc_id=thread.npc_id,
             memory_type=memory_type,
             content=content,
             keywords=keywords,
             importance=importance,
-            source_record_id=source_record_id,
         )
         db.add(memory_item)
         db.flush()
-        _sync_memory_item_to_milvus(memory_item)
+        _sync_memory_item_to_milvus(memory_item, thread)
 
 
-def _sync_memory_item_to_milvus(item: NpcMemoryItem) -> None:
+def _normalize_memory_type(value: Any, allow_player_fact: bool) -> str:
+    """把模型输出限制到允许类型，并保护 player_fact 只来自结构化确认路径。"""
+    # 对话中的玩家陈述默认只是 claim；只有显式授权的 Unity 结构化证据才能成为 fact。
+    memory_type = str(value or "player_claim").strip().lower()
+    if memory_type == "player_fact":
+        return "player_fact" if allow_player_fact else "player_claim"
+    allowed = {"player_claim", "npc_disclosed", "unresolved_question", "relationship_signal"}
+    return memory_type if memory_type in allowed else "player_claim"
+
+
+def _sync_memory_item_to_milvus(item: NpcMemoryItem, thread: NpcChatThread) -> None:
+    """把已获得 PostgreSQL ID 的业务记忆同步为带用户/线程/NPC 隔离键的向量记录。"""
     from npc_app.services.memory_milvus_service import upsert_memory_item_to_milvus
 
     upsert_memory_item_to_milvus(
         memory_item_id=item.id,
-        user_id=item.user_id,
+        user_id=thread.user_id,
         thread_id=item.thread_id,
-        npc_id=item.npc_id,
+        npc_id=thread.npc_id,
         memory_type=item.memory_type,
         content=item.content,
         keywords=item.keywords,
         importance=item.importance,
-        source_record_id=item.source_record_id,
     )
-
-
-def _parse_json_object(text: str) -> dict[str, Any]:
-    try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else {}
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, flags=re.S)
-        if not match:
-            return {}
-        try:
-            data = json.loads(match.group(0))
-            return data if isinstance(data, dict) else {}
-        except json.JSONDecodeError:
-            return {}
-
-
-def _extract_terms(text: str) -> set[str]:
-    ascii_terms = {term.lower() for term in re.findall(r"[A-Za-z0-9_]{2,}", text)}
-    cjk_terms: set[str] = set()
-    for phrase in re.findall(r"[\u4e00-\u9fff]{2,}", text):
-        cjk_terms.add(phrase)
-        cjk_terms.update(phrase[index : index + 2] for index in range(0, len(phrase) - 1))
-    return ascii_terms.union(cjk_terms)
-
-
-def _coerce_importance(value: Any) -> int:
-    try:
-        importance = int(value)
-    except (TypeError, ValueError):
-        importance = 3
-    return min(max(importance, 1), 5)
-
-
-def _truncate(text: str, max_chars: int) -> str:
-    if len(text) <= max_chars:
-        return text
-    return text[: max(0, max_chars - 1)].rstrip() + "…"
-
-
-def _message_to_text(message: Any) -> str:
-    content = getattr(message, "content", "")
-    if isinstance(content, str):
-        return content.strip()
-    return str(content).strip() if content else ""

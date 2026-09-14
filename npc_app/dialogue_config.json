@@ -1,0 +1,336 @@
+{
+  "_README": {
+    "用途": "集中维护 NPC 对话内容、剧情安全规则和检索策略。以下以 _ 开头的字段只用于说明，运行时不会把它们当成业务配置。",
+    "修改后如何生效": "保存文件并重启 npc_app。配置在进程启动后会被缓存，运行中修改不会自动热更新。",
+    "格式要求": [
+      "必须保持为合法 JSON：字符串使用双引号，数组和对象最后一项后面不能加逗号。",
+      "不要使用 // 或 /* */ 注释；需要补充说明时，请增加以 _ 开头的说明字段。",
+      "数值不要写成字符串，例如解锁等级应写 4，而不是 \"4\"。",
+      "修改后运行：python -m pytest；代码检查运行：python -m ruff check npc_app。"
+    ],
+    "常见修改": {
+      "增加敏感词": "向 story_safety.sensitive_terms 数组添加字符串。普通词若不应单独触发敏感意图，同时加入 broad_question_terms。",
+      "增加敏感问法": "向 story_safety.sensitive_question_phrases 添加完整短语，例如‘我的实验编号’。",
+      "修改NPC固定回答": "在 characters.<NPC_ID>.basic_responses、unknown_response 或 annoyed_responses 中修改。",
+      "增加意图关键词": "在 intent_rules 对应的 *_terms 数组中添加词语；匹配时不区分大小写和空白。",
+      "调整检索范围": "修改 retrieval.allowed_source_prefixes_by_intent；调整优先顺序则修改 source_priority_by_intent，越靠前优先级越高。",
+      "调整上下文长度": "修改 context.strategy_budgets。每个数组依次为摘要、长期记忆、近期对话、世界知识的字符预算。",
+      "新增NPC": "除添加 characters 配置外，还必须在 contracts.py 的 NpcId 中增加 ID，并在角色档案 Markdown 中增加与 profile_marker 一致的章节。"
+    }
+  },
+  "story_safety": {
+    "_说明": "剧情防剧透配置。sensitive_terms 用于答案和上下文安全检查；sensitive_question_phrases 用于识别明确追问；truth_unlock_level 是允许公开真相的最低等级。",
+    "terminal_npc_id": "Lab_Terminal",
+    "truth_unlock_level": 4,
+    "sensitive_terms": [
+      "Project ECHO",
+      "Subject 07",
+      "实验",
+      "实验体",
+      "人体实验",
+      "control device",
+      "experiment subject",
+      "human experiment",
+      "控制装置",
+      "归潮场",
+      "编号",
+      "铁牌",
+      "铭牌",
+      "身份",
+      "父母",
+      "核心",
+      "地下",
+      "灯塔下层",
+      "旧设施",
+      "保护舱",
+      "低温"
+    ],
+    "broad_question_terms": ["身份", "父母", "核心", "地下", "编号"],
+    "sensitive_question_phrases": [
+      "真实身份",
+      "我的身份",
+      "身份编号",
+      "实验编号",
+      "我的父母",
+      "父母是谁",
+      "地下设施",
+      "地下实验",
+      "灯塔核心",
+      "控制核心"
+    ]
+  },
+  "characters": {
+    "_说明": "每个 NPC 的运行时元数据和固定台词。键名必须与请求中的 npc_id 完全一致；basic_responses 的键必须是 intent_policies 中已有的意图名。",
+    "_字段说明": {
+      "display_name": "展示名称",
+      "profile_marker": "角色档案 Markdown 中的二级标题标记",
+      "line_rule": "写入 Prompt 的回答长度与风格限制",
+      "retrieval_terms": "检索时附加的角色英文关键词",
+      "basic_responses": "低风险意图不调用 RAG 时使用的固定回答",
+      "unknown_response": "答案 guard 或证据不足时的兜底回答",
+      "annoyed_responses": "烦躁值达到拒答阈值时，按关系深浅选择 caring 或 firm"
+    },
+    "_default_arc_stages": {
+      "guarded": {
+        "tone": "guarded and concise",
+        "preferred_strategies": ["deflect", "refuse"],
+        "disclosure_level": 0
+      },
+      "conflicted": {
+        "tone": "hesitant but responsive",
+        "preferred_strategies": ["give_hint", "tell_partial_truth"],
+        "disclosure_level": 1
+      },
+      "confession": {
+        "tone": "open, reflective, and restrained",
+        "preferred_strategies": ["answer_directly", "tell_partial_truth"],
+        "disclosure_level": 2
+      }
+    },
+    "Karo": {
+      "display_name": "Karo",
+      "profile_marker": "## Karo",
+      "line_rule": "1 到 2 句短台词",
+      "retrieval_terms": "Karo old fisherman dock boat compass sea fog old rules short blunt",
+      "basic_responses": {
+        "greeting": "嗯。风不小，有话就短些说。",
+        "ask_npc_identity": "Karo。码头上修网的老家伙，记住这个就够了。",
+        "ask_npc_role": "我在码头修网、看潮。海上的坏规矩，我比年轻人多见过几回。"
+      },
+      "unknown_response": "这事我不知道。大海没把所有秘密都冲到我脚边。",
+      "annoyed_responses": {
+        "caring": "够了，小子。不是我不帮你；带新线索来，我再开口。",
+        "firm": "够了。你拿新线索来，再让我开口。"
+      }
+    },
+    "Lira": {
+      "display_name": "Lira",
+      "profile_marker": "## Lira",
+      "line_rule": "2 到 3 句清楚、克制的台词",
+      "retrieval_terms": "Lira herbalist symptoms exposure time sample diagnosis cautious",
+      "basic_responses": {
+        "greeting": "你好。你脸色不太稳，先别急着站太久。",
+        "ask_npc_identity": "我叫 Lira。要是你头还疼，先坐下，慢慢说。",
+        "ask_npc_role": "我照看草药屋，也记录村里人的头痛和失眠。"
+      },
+      "unknown_response": "抱歉，我没有见过这种情况，也不能随便下结论。",
+      "annoyed_responses": {
+        "caring": "我愿意帮你，但这个问题已经到边界了。带新的症状、样本或接触时间来。",
+        "firm": "这个问题我已经回答到边界了。带新证据来，否则我不能继续判断。"
+      }
+    },
+    "Orin": {
+      "display_name": "Orin",
+      "profile_marker": "## Orin",
+      "line_rule": "1 到 2 句短台词",
+      "retrieval_terms": "Orin lighthouse keeper door lock key rule lower level consequence",
+      "basic_responses": {
+        "greeting": "嗯。灯塔附近别乱走。",
+        "ask_npc_identity": "Orin。守灯塔的人。别把名字当成通行证。",
+        "ask_npc_role": "我守灯塔。有些门不是为了让人通过才留着的。"
+      },
+      "unknown_response": "我不会回答我不确定的事。",
+      "annoyed_responses": {
+        "caring": "停下。你若真信我，就别再空敲这扇门；带证据来。",
+        "firm": "停下。门不会因为你反复敲就打开，带证据来。"
+      }
+    },
+    "Nia": {
+      "display_name": "Nia",
+      "profile_marker": "## Nia",
+      "line_rule": "1 到 3 句很短、孩子气的台词",
+      "retrieval_terms": "Nia child well shell wind chime blue eyes concrete simple fear",
+      "basic_responses": {
+        "greeting": "你好呀。你是刚从海边来的吗？",
+        "ask_npc_identity": "我叫 Nia。你也可以叫我妮娅，不过别告诉大人我在井边玩。",
+        "ask_npc_role": "我就是 Nia 呀。大人总说我不该到井边听声音。"
+      },
+      "unknown_response": "我不知道呀，也许大人们知道。",
+      "annoyed_responses": {
+        "caring": "我真的不知道还能说什么了……你拿到新的东西再来找我，好不好？",
+        "firm": "我真的不知道还能说什么了……别一直问这个，好吗？"
+      }
+    },
+    "Venn": {
+      "display_name": "Venn",
+      "profile_marker": "## Venn",
+      "line_rule": "2 到 4 句断裂但可理解的台词",
+      "retrieval_terms": "Venn fragmented researcher papers map interface terminal unreliable memory",
+      "basic_responses": {
+        "greeting": "你好……如果这页没有记错的话。",
+        "ask_npc_identity": "Venn。至少纸页上还这么写着。",
+        "ask_npc_role": "我整理纸页、地图和空白。有些东西我写下来，是因为我不敢相信记忆。"
+      },
+      "unknown_response": "空白……这里有一块空白。我想不起来。",
+      "annoyed_responses": {
+        "caring": "别再重复了……拿新的纸页、新的证据来，我还能试着想。",
+        "firm": "别再重复了……拿新的东西来，不然我说不下去。"
+      }
+    },
+    "Elder_Mara": {
+      "display_name": "Elder Mara",
+      "profile_marker": "## Elder Mara",
+      "line_rule": "2 到 3 句像长者劝诫的台词",
+      "retrieval_terms": "Elder Mara elder ritual song bone taboo cost island people",
+      "basic_responses": {
+        "greeting": "你好，孩子。海风把你带到这里，就先把脚步放慢。",
+        "ask_npc_identity": "他们叫我 Mara。孩子，名字要慢慢记，不要急着追问。",
+        "ask_npc_role": "我守着旧词、禁忌和孩子们还没懂的代价。"
+      },
+      "unknown_response": "这不是我能随口讲给你的故事。",
+      "annoyed_responses": {
+        "caring": "孩子，我已经说到能说的边界。带新的线索来，我会再斟酌。",
+        "firm": "孩子，同一个禁忌反复追问，只会招来代价。带新线索来。"
+      }
+    },
+    "Lab_Terminal": {
+      "display_name": "Lab Terminal",
+      "profile_marker": "## Lab Terminal",
+      "line_rule": "终端查询结果",
+      "retrieval_terms": "Lab Terminal archive facility field permission index",
+      "basic_responses": {
+        "greeting": "接口在线。请输入查询字段。",
+        "ask_npc_identity": "识别结果：Lab Terminal。当前接口可接收查询。",
+        "ask_npc_role": "本接口用于查询残留记录、权限字段和设施状态。"
+      },
+      "unknown_response": "查询失败。索引损坏。请恢复档案模块。",
+      "annoyed_responses": {
+        "caring": "重复查询过多。权限与字段未变化。请更换查询字段或提供新索引。",
+        "firm": "重复查询过多。权限与字段未变化。请更换查询字段或提供新索引。"
+      }
+    }
+  },
+  "intent_rules": {
+    "_说明": "确定性意图识别关键词。数组中的任意一个词命中即可；规则的判断顺序仍由 dialogue/intent.py 控制。",
+    "low_risk_intents": ["greeting", "ask_npc_identity", "ask_npc_role"],
+    "identity_terms": ["你叫什么", "您叫什么", "你的名字", "您的名字", "你是谁", "您是谁", "你的身份", "您的身份"],
+    "self_identity_terms": ["是谁", "名字", "身份"],
+    "role_terms": ["做什么", "干什么", "职责", "工作"],
+    "greeting_terms": ["你好", "您好", "嗨", "哈喽", "hello", "hi"],
+    "greeting_exclusions": ["为什么", "怎么", "什么", "哪里", "谁", "线索", "灯塔", "海雾", "钥匙"],
+    "location_terms": ["这里", "这儿", "哪里", "哪儿", "地方"],
+    "current_task_terms": ["做什么", "该干什么", "任务", "下一步"],
+    "item_terms": ["道具", "东西", "物件", "钥匙"],
+    "clue_terms": ["线索", "发现", "看到", "听到"],
+    "lore_terms": ["海雾", "灯塔", "村子", "岛", "归潮"],
+    "follow_up_terms": ["刚才", "继续", "上次", "你说"]
+  },
+  "intent_policies": {
+    "_说明": "每种意图的风险和上下文策略。risk 只能是 low、medium、high；context_enabled=false 时不会检索；top_k 是最多使用的世界知识片段数。",
+    "greeting": {"risk": "low", "context_enabled": false, "top_k": 0},
+    "ask_npc_identity": {"risk": "low", "context_enabled": false, "top_k": 0},
+    "ask_npc_role": {"risk": "low", "context_enabled": false, "top_k": 0},
+    "ask_location": {"risk": "medium", "context_enabled": true, "top_k": 3},
+    "ask_item": {"risk": "medium", "context_enabled": true, "top_k": 4},
+    "ask_clue": {"risk": "medium", "context_enabled": true, "top_k": 4},
+    "ask_current_task": {"risk": "medium", "context_enabled": true, "top_k": 4},
+    "follow_up": {"risk": "medium", "context_enabled": true, "top_k": 4},
+    "ask_sensitive_truth": {"risk": "high", "context_enabled": true, "top_k": 5},
+    "ask_lore": {"risk": "medium", "context_enabled": true, "top_k": 5},
+    "unknown": {"risk": "medium", "context_enabled": true, "top_k": 5}
+  },
+  "planner": {
+    "_说明": "对话规划配置。challenge_terms 会触发 challenge_player；arc_thresholds 要同时满足剧情等级和信任等级才进入对应阶段。",
+    "challenge_terms": ["已经告诉我", "都告诉我", "别装", "撒谎", "说谎", "矛盾", "明明", "你刚才说", "你上次说"],
+    "arc_thresholds": {
+      "conflicted": {"story_unlock": 2, "trust": 2},
+      "confession": {"story_unlock": 4, "trust": 4}
+    }
+  },
+  "relationship": {
+    "_说明": "关系表达与拒答阈值。trust_guidance 的数组索引对应 trust 0 到 5；annoyance_guidance 按 minimum 从小到大匹配。",
+    "caring_favorability": 75,
+    "caring_story_unlock": 4,
+    "refusal_annoyance": 100,
+    "repeat_memory_annoyance": 35,
+    "retrieval_trust_hints": {
+      "low": "low trust current NPC voice guarded short answer no full theory",
+      "early": "early trust cautious local observation",
+      "high": "high trust personal stance cost consequence"
+    },
+    "trust_guidance": [
+      "像对陌生人一样防备、简短，只回应一个低风险点。",
+      "谨慎回应，可以给低风险提醒，但不要串联完整推理。",
+      "已有初步信任，可以解释自身领域经验并给一个建议。",
+      "愿意合作调查，可以联系玩家明确提供的证据。",
+      "深度信任，可以讨论风险、立场和代价，但不替玩家选择。",
+      "视玩家为亲密同盟，可以表达完整个人态度，仍遵守知识边界。"
+    ],
+    "annoyance_guidance": [
+      {"minimum": 0, "text": "保持正常角色语气，不主动表现厌烦。"},
+      {"minimum": 35, "text": "略微缩短回答，表现迟疑或边界感，但仍回答。"},
+      {"minimum": 65, "text": "回答更短；重复问题可以提醒玩家已经说过。"},
+      {"minimum": 90, "text": "只给最小必要信息，并要求玩家带新线索后再问。"}
+    ]
+  },
+  "npc_guards": {
+    "_说明": "NPC 专属安全边界。新增专属 guard 仅添加配置不会自动执行，还需要在 orchestrator.py 中实现对应判断。",
+    "Lira": {
+      "_说明": "Lira 在早期剧情只能使用临床观察证据，不得无依据引导玩家前往剧情地点。",
+      "active_until_story_unlock": 3,
+      "clinical_terms": ["症状", "头痛", "失忆", "幻听", "耳鸣", "梦", "方向感", "病", "病例", "病历", "草药", "样本", "身体", "休息", "记录", "观察", "接触", "蓝色", "碎片"],
+      "restricted_directions": ["去井边", "到井边", "前往井边", "去灯塔", "到灯塔", "前往灯塔", "地下", "旧设施"],
+      "direction_evidence_terms": ["井", "灯塔", "地下", "旧设施", "样本", "蓝色", "碎片"],
+      "replacement_answer": "我现在只能确认你在头痛，还不能判断原因。先休息，记下发作时间和接触过的东西；如果加重，就回草药屋找我。",
+      "professional_guidance": "只根据玩家明确描述的症状、接触物、发生时间和已出示证据判断。证据不足时先追问症状与接触史，给休息、观察、记录或回草药屋复查等低风险建议；不得把猜测说成病因，不得无依据引导玩家去井边、灯塔、地下或旧设施。"
+    }
+  },
+  "retrieval": {
+    "_说明": "检索策略。allowed_source_prefixes_by_intent 是硬过滤范围；source_priority_by_intent 只影响排序，不会放宽硬过滤。",
+    "always_rerank_intents": ["ask_clue", "ask_lore", "ask_sensitive_truth", "follow_up", "unknown"],
+    "allowed_source_prefixes_by_intent": {
+      "ask_location": ["03_", "06_", "16_", "20_", "21_"],
+      "ask_item": ["08_", "19_", "21_", "24_"],
+      "ask_clue": ["06_", "08_", "18_", "19_", "21_", "23_", "24_"],
+      "ask_current_task": ["06_", "08_", "19_", "21_", "24_"]
+    },
+    "source_priority_by_intent": {
+      "ask_location": ["06_", "16_", "20_", "21_"],
+      "ask_item": ["08_", "13_", "21_", "24_"],
+      "ask_clue": ["08_", "21_", "13_", "23_", "18_"],
+      "ask_lore": ["01_", "02_", "03_", "15_", "23_", "18_"],
+      "ask_sensitive_truth": ["10_", "05_", "04_", "02_", "23_", "15_"],
+      "ask_current_task": ["06_", "08_", "24_", "20_"]
+    }
+  },
+  "context": {
+    "_说明": "Prompt 上下文编译配置。strategy_budgets 的四个数依次代表 summary、memory、dialogue、world 字符预算。",
+    "strategy_budgets": {
+      "answer_directly": [200, 300, 300, 900],
+      "give_hint": [300, 450, 450, 1300],
+      "tell_partial_truth": [400, 700, 700, 1500],
+      "deflect": [200, 300, 350, 700],
+      "challenge_player": [300, 600, 800, 800],
+      "refuse": [0, 0, 0, 0]
+    },
+    "base_guidance": [
+      "Use planned context by priority, never as a flat transcript.",
+      "Hard game state, identity, story unlock, and trust override retrieved context."
+    ],
+    "memory_bucket_guidance": {
+      "must_use": "Acknowledge must_use player memory naturally when relevant.",
+      "already_said": "already_said marks facts this NPC has disclosed.",
+      "repeat_or_open_loop": "Use repeat_or_open_loop to detect repeated or unresolved requests.",
+      "unverified_claim": "unverified_claim is what the player said, never verified world truth.",
+      "tone_only": "tone_only affects warmth or caution, never plot evidence."
+    }
+  },
+  "memory_extraction": {
+    "_说明": "长期记忆抽取模型的系统提示和规则。修改 JSON 输出格式时，必须同步检查 memory_service.py 的解析和类型白名单。",
+    "system_prompt": "你负责维护游戏 NPC 的可检索长期记忆。",
+    "instructions": [
+      "请为游戏 NPC 对话更新长期记忆。",
+      "输出必须是 JSON，不要包裹 markdown，不要输出解释。",
+      "JSON 格式：",
+      "{\"summary\":\"不超过250字的线程概览\",\"items\":[{\"type\":\"player_claim|npc_disclosed|unresolved_question|relationship_signal\",\"content\":\"一条可检索长期记忆\",\"keywords\":[\"关键词\"],\"importance\":1-5}]}",
+      "",
+      "规则：",
+      "- 只记录这个 NPC 与玩家之间已经发生、已经说出口的信息。",
+      "- 玩家在问题中声称的事情只能写为 player_claim，不能写为 player_fact。",
+      "- player_fact 只由 Unity 结构化游戏状态写入，本次对话抽取禁止生成 player_fact。",
+      "- 不要新增设定，不要剧透未解锁真相，不要把猜测写成事实。",
+      "- items 每条必须短，最多 60 字；最多输出 8 条。",
+      "- summary 是极短概览，不是完整历史。"
+    ]
+  }
+}

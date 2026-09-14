@@ -5,12 +5,31 @@ __pycache__/
 .env
 .env.*
 *.db
-*.sqlite
-*.sqlite3
+.coverage
+coverage.xml
+.pytest_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# Local runtime data
+.skill_app_data/
+tmp/
+
+# Generated evaluation / acceptance reports
+reports/npc_evaluation/
+reports/npc_dialogue_ab/
+reports/npc_real_acceptance/
+reports/npc_real_acceptance_boundaries/
+
+# Personal / local-only notes
+AI_NPC_个人开发升级计划.md
+面试准备_项目问答.md
+reports/AI_NPC交流实现逐行讲解.md
+
+# OS / editor
 .DS_Store
+Thumbs.db
 .vscode/
 .idea/
-
-# skill_app runtime data
-.skill_app_data/
-.tmp_skill_app_*.sqlite3

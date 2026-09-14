@@ -1,3 +1,0 @@
-display_name: NPC Chat Evaluator
-short_description: 调试 NPC 设定问答和 RAG 行为。
-default_prompt: 使用本地 retrieval 和 chat test workflow 调试这个 NPC 剧情/设定问答问题。

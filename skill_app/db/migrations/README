@@ -1,9 +1,0 @@
-Alembic migration environment for skill_app.
-
-Create a migration:
-
-    alembic revision --autogenerate -m "description"
-
-Apply migrations:
-
-    alembic upgrade head

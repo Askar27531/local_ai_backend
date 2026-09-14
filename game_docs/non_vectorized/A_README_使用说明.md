@@ -202,18 +202,18 @@ Lab_Terminal
 
 ## 7. 信任等级
 
-`trust_level` 不控制事实是否解锁，而控制 NPC 是否愿意说、说多直接。
+`relationship.trust` 不控制事实是否解锁，而控制 NPC 是否愿意说、说多直接。
 
 ```text
-trust_level 0：陌生人，防备、含糊、短句，可能反问。
-trust_level 1：勉强回应，只给低风险经验或提醒。
-trust_level 2：初步信任，可以解释自己领域内的观察。
-trust_level 3：愿意合作调查，可以串联玩家已掌握的线索。
-trust_level 4：深度信任，可以讨论高风险信息和个人立场。
-trust_level 5：亲密同盟或终局托付对象，可以表达完整态度。
+relationship.trust 0：陌生人，防备、含糊、短句，可能反问。
+relationship.trust 1：勉强回应，只给低风险经验或提醒。
+relationship.trust 2：初步信任，可以解释自己领域内的观察。
+relationship.trust 3：愿意合作调查，可以串联玩家已掌握的线索。
+relationship.trust 4：深度信任，可以讨论高风险信息和个人立场。
+relationship.trust 5：亲密同盟或终局托付对象，可以表达完整态度。
 ```
 
-注意：即使 `trust_level` 很高，也不能突破 `unlocked_story_level`。信任等级解决“愿不愿意说”，剧情等级解决“能不能说”。
+注意：即使 `relationship.trust` 很高，也不能突破 `story.unlock_level`。信任等级解决“愿不愿意说”，剧情等级解决“能不能说”。
 
 ## 8. 推荐写作规范
 
@@ -305,7 +305,6 @@ npc_app/services/npc_prompt_service.py
 scripts/ingest_game_docs_to_milvus.py
 scripts/validate_game_docs_for_rag.py
 scripts/test_retrieve.py
-scripts/test_npc_chat_stream.py
 ```
 
 还要重新入库，因为 Milvus 中的记录会按 `npc_id` 展开。
@@ -355,26 +354,7 @@ python scripts\test_retrieve.py --question "Project ECHO 是什么？" --npc-id 
 
 ### 10.5 NPC 对话测试
 
-先启动后端：
-
-```powershell
-uvicorn npc_app.main:app --host 0.0.0.0 --port 8001 --reload
-```
-
-再运行：
-
-```powershell
-python scripts\test_npc_chat_stream.py --suite quality
-python scripts\test_npc_chat_stream.py --suite coverage
-```
-
-临时对话：
-
-```powershell
-python scripts\test_npc_chat_stream.py --question "Subject 07 是我吗？" --npc-id Venn --unlock-level 3 --trust-level 2
-```
-
-终局前，Venn 可以表现出痛苦、联想和迟疑，但不应该直接确认玩家真实身份。
+NPC 端到端请求、NDJSON 解析和场景回归测试在 Unity 项目中维护。本仓库通过 `npc_app/tests/` 验证 Runtime 规则，并在发布前通过 `scripts/run_real_npc_acceptance.py` 执行真实 HTTP 验收。
 
 ## 11. 与 Unity 的关系
 
@@ -382,15 +362,15 @@ Unity 客户端不需要直接理解全部 Markdown。推荐把 Unity 与后端�
 
 - Unity 负责玩家位置、任务状态、物品栏、已访问地点、已知线索、NPC 信任等级。
 - 后端负责根据这些状态生成 NPC 回答。
-- Unity 每次对话请求时，把当前状态传给 `/npc/chat/stream`。
+- Unity 每次对话请求时，把当前状态传给 `/v1/npc/chat/stream`。
 - 后端返回 `thread`、`sources`、`answer_delta`、`done` 等事件。
 - Unity 显示 `answer_delta`，并保存返回的 `thread_id` 以延续对话。
 
 最重要的两个字段是：
 
 ```text
-unlocked_story_level
-trust_level
+story.unlock_level
+relationship.trust
 ```
 
 它们应该由 Unity 的任务系统、探索进度和玩家行为共同维护。

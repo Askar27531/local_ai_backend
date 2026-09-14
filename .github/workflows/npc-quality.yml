@@ -1,0 +1,42 @@
+name: NPC Runtime Quality
+
+on:
+  pull_request:
+    paths:
+      - "npc_app/**"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".github/workflows/npc-quality.yml"
+  push:
+    branches: [main]
+    paths:
+      - "npc_app/**"
+      - "pyproject.toml"
+      - "requirements*.txt"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Lint NPC application
+        run: python -m ruff check npc_app
+
+      - name: Run NPC tests with coverage
+        run: >-
+          python -m pytest npc_app/tests
+          --cov=npc_app
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=70

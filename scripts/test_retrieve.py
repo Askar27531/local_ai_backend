@@ -630,12 +630,13 @@ def retrieve(
         normalize_embeddings=True,
     )[0].tolist()
 
-    filter_expr = f'npc_id == "{npc_id}" and unlock_level <= {int(unlocked_story_level)}'
+    filter_expr = "npc_id == {npc_id} and unlock_level <= {unlock_level}"
 
     results = client.search(
         collection_name=COLLECTION_NAME,
         data=[query_vector],
         filter=filter_expr,
+        filter_params={"npc_id": npc_id, "unlock_level": unlocked_story_level},
         limit=int(top_k),
         output_fields=[
             "source_file",

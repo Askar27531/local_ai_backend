@@ -6,15 +6,14 @@ import hmac
 import json
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from npc_app.db.database import get_db
-from npc_app.db.models import NpcUser
+from npc_app.database import NpcUser, get_db
 
 security = HTTPBearer(auto_error=False)
 
@@ -61,7 +60,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_access_token(user: NpcUser) -> str:
     header = {"typ": "JWT", "alg": "HS256"}
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user.id),
         "username": user.username,
@@ -72,7 +71,7 @@ def create_access_token(user: NpcUser) -> str:
 
     header_part = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     payload_part = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
-    signing_input = f"{header_part}.{payload_part}".encode("utf-8")
+    signing_input = f"{header_part}.{payload_part}".encode()
     signature = hmac.new(NPC_AUTH_SECRET_KEY.encode("utf-8"), signing_input, hashlib.sha256).digest()
     return f"{header_part}.{payload_part}.{_b64url_encode(signature)}"
 
@@ -80,7 +79,7 @@ def create_access_token(user: NpcUser) -> str:
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
         header_part, payload_part, signature_part = token.split(".")
-        signing_input = f"{header_part}.{payload_part}".encode("utf-8")
+        signing_input = f"{header_part}.{payload_part}".encode()
         expected_signature = hmac.new(
             NPC_AUTH_SECRET_KEY.encode("utf-8"),
             signing_input,
@@ -93,29 +92,26 @@ def decode_access_token(token: str) -> dict[str, Any]:
 
         payload = json.loads(_b64url_decode(payload_part).decode("utf-8"))
         exp = int(payload.get("exp", 0))
-        if exp < int(datetime.now(timezone.utc).timestamp()):
+        if exp < int(datetime.now(UTC).timestamp()):
             raise ValueError("token expired")
         if payload.get("aud") != "npc_app":
             raise ValueError("invalid audience")
         return payload
-    except Exception:
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="NPC 登录状态无效或已过期",
-        )
+        ) from exc
 
 
 def authenticate_user(db: Session, username: str, password: str) -> NpcUser:
     user = db.query(NpcUser).filter(NpcUser.username == username).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="用户名或密码错误")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="用户已被禁用")
     return user
 
 
 def register_user(db: Session, username: str, password: str) -> NpcUser:
-    username = username.strip()
     if db.query(NpcUser).filter(NpcUser.username == username).first():
         raise HTTPException(status_code=400, detail="用户名已存在")
 
@@ -141,7 +137,7 @@ def get_current_user(
     if not user_id:
         raise HTTPException(status_code=401, detail="NPC 登录状态无效")
 
-    user = db.query(NpcUser).filter(NpcUser.id == int(user_id), NpcUser.is_active == True).first()
+    user = db.query(NpcUser).filter(NpcUser.id == int(user_id)).first()
     if not user:
-        raise HTTPException(status_code=401, detail="NPC 用户不存在或已禁用")
+        raise HTTPException(status_code=401, detail="NPC 用户不存在")
     return user

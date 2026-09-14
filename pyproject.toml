@@ -1,11 +1,12 @@
 [tool.pytest.ini_options]
-testpaths = ["skill_app/tests"]
+testpaths = ["npc_app/tests"]
 python_files = ["test_*.py"]
 addopts = "-q --strict-markers"
 
 [tool.coverage.run]
-source = ["skill_app"]
+source = ["npc_app"]
 branch = true
+omit = ["npc_app/tests/*"]
 
 [tool.coverage.report]
 show_missing = true
@@ -17,12 +18,15 @@ line-length = 120
 extend-exclude = [
     ".venv",
     "__pycache__",
-    "skill_app/db/migrations/versions",
 ]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
-"skill_app/main.py" = ["B008"]
-"skill_app/tests/**/*.py" = ["S101"]
+"npc_app/main.py" = ["B008"]
+"npc_app/services/auth_service.py" = ["B008"]
+"npc_app/tests/**/*.py" = ["S101"]
+
+[tool.setuptools.package-data]
+npc_app = ["dialogue_config.json"]
