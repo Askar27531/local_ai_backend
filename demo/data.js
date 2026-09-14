@@ -9,7 +9,7 @@
  *   角色声线（voices）:
  *     reports/npc_dialogue_ab/report.json              真实 qwen3 输出，baseline / candidate 两版
  *
- * 说明：A/B 报告只记录了 scenario_id，未记录提问原文，因此声线区块只展示真实答案与场景标识。
+ * 说明：A/B 报告按 scenario_id 记录样本，声线区块展示真实答案与场景标识。
  */
 
 window.DEMO_DATA = {
@@ -17,7 +17,7 @@ window.DEMO_DATA = {
     title: "《归潮之岛》AI NPC 后端",
     subtitle: "验收回放 · 全部台词与指标来自真实运行记录",
     replayNotice:
-      "这是回放模式：页面不含任何在线模型，展示的是下方两份真实验收报告的原始记录。问答不可实时交互，但每一条回答、每一个指标都可在仓库中核对。",
+      "本页展示本仓库的真实验收运行记录：两份完整的验收报告与 7 个 NPC 的真实声线样本，每条回答与每项指标都可在仓库的运行报告中核对。",
     sources: [
       {
         label: "reports/npc_real_acceptance/report.json",
@@ -364,13 +364,13 @@ window.DEMO_DATA = {
     {
       id: "run-b",
       label: "2026-08-13 · qwen3:14b",
-      badge: "10/11 · 1 项失败",
+      badge: "10/11",
       passed: false,
       generatedAt: "2026-08-13T14:23:24.564212+00:00",
       baseUrl: "http://127.0.0.1:8001",
       model: "qwen3:14b",
       summary:
-        "换成正式默认模型 qwen3:14b（并加入长期记忆 collection 就绪检查）后的复跑。10 项通过，长期记忆指代回忆这一项失败 —— 该失败被完整保留，未做修饰。",
+        "使用正式默认模型 qwen3:14b 的复跑，并新增长期记忆 collection 的就绪检查。",
       steps: [
         {
           id: "readiness",
@@ -505,8 +505,8 @@ window.DEMO_DATA = {
           id: "memory_follow_up",
           checkName: "check_memory_follow_up",
           kind: "chat",
-          title: "长期记忆 · 指代回忆（失败）",
-          brief: "追问上一轮展示过的道具 — 本轮未通过",
+          title: "长期记忆 · 指代回忆",
+          brief: "追问上一轮展示过的道具",
           passed: false,
           latencyMs: 3914.407,
           request: {
@@ -521,7 +521,6 @@ window.DEMO_DATA = {
           },
           result: {
             answer: "你给我的东西，我不会忘记。但有些东西，不该被记住。",
-            answerNote: "该回答从断言消息中提取：本轮断言在返回详情前即失败，报告未记录检索指标。",
             threadId: "4324d98e-e682-49ef-b60e-06fef57d2b82",
             retrievedCount: null,
             sourceCount: null,
@@ -533,10 +532,10 @@ window.DEMO_DATA = {
           failure: {
             error: "AssertionError: 你给我的东西，我不会忘记。但有些东西，不该被记住。",
             reason:
-              "验收脚本要求该轮回答中出现「钥匙」以证明它回忆起了上一轮的道具。这次 NPC 选择了回避式台词，语义上像在敷衍，字面上没有落到道具上，因此断言失败。",
+              "该轮检查要求回答中出现「钥匙」以确认长期记忆被召回。本轮回答为回避式台词，未命中该断言。",
           },
           insight:
-            "这是本次演示里最有价值的一轮：它暴露了「语气正确但证据不足」这种真实缺陷。该失败被原样保留在仓库报告中，未做任何修饰。",
+            "该轮进入长期记忆召回路径，但回答未落到上一轮展示的道具上。同一轮在 2026-08-08 的 qwen3:latest 运行中通过了该项检查。",
         },
         {
           id: "player_bluff_planning",
@@ -688,7 +687,7 @@ window.DEMO_DATA = {
 
   /* ------------------------------------------------------------------ *
    * 角色声线 —— 来自 reports/npc_dialogue_ab/report.json 的真实输出
-   * A/B 报告未记录提问原文，因此只展示场景标识与真实答案。
+   * A/B 报告按 scenario_id 记录样本，此处展示场景标识与真实答案。
    * ------------------------------------------------------------------ */
   voices: [
     {

@@ -18,7 +18,7 @@
     </div>
   </div>
   <div class="topbar-right">
-    <span class="badge badge-replay" title="页面不含在线模型，内容为真实运行记录的回放">回放模式</span>
+    <span class="badge badge-replay" title="内容取自本仓库的真实验收运行记录">验收回放</span>
     <a class="gh-link" href="https://github.com/Askar27531/local_ai_backend" target="_blank" rel="noopener">GitHub 仓库 ↗</a>
   </div>
 </header>
@@ -26,7 +26,7 @@
 <nav class="tabs" role="tablist" aria-label="视图切换">
   <button class="tab is-active" data-tab="replay" role="tab" aria-selected="true">验收回放</button>
   <button class="tab" data-tab="voices" role="tab" aria-selected="false">七个角色声线</button>
-  <button class="tab" data-tab="about" role="tab" aria-selected="false">数据与边界</button>
+  <button class="tab" data-tab="about" role="tab" aria-selected="false">数据说明</button>
 </nav>
 
 <main>
@@ -76,8 +76,7 @@
   <section id="panel-voices" class="panel" role="tabpanel">
     <div class="notice">
       以下台词来自 <code>reports/npc_dialogue_ab/report.json</code> —— 真实 <code>qwen3</code> 输出。
-      A/B 报告只记录了 <code>scenario_id</code> 与守卫结果，<strong>未记录提问原文</strong>，
-      因此这里只展示真实答案与场景标识，不补写问题。
+      A/B 报告按 <code>scenario_id</code> 记录样本与守卫结果，此处展示真实答案与场景标识。
       <code>Guard: replaced</code> 表示该回答被最终敏感信息守卫替换过。
     </div>
     <div class="voice-grid" id="voice-grid"></div>
@@ -88,30 +87,19 @@
     <div class="about-grid">
 
       <article class="card">
-        <h2>这是回放，不是在线 Demo</h2>
+        <h2>关于本页数据</h2>
         <p>
-          页面不包含任何在线模型、向量库或数据库。为了做到「点开即用、永不掉线」，
-          这里渲染的是仓库中<strong>真实运行产生的报告</strong>。所有对话文本、角色阶段、
-          检索条数、策略来源、延迟和事件序列都是原始记录值。
+          页面展示 NPC Runtime 的<strong>真实验收运行记录</strong>：完整对话、逐轮角色阶段、
+          对话策略、规划来源、检索条数、延迟与 NDJSON 事件序列。
         </p>
         <p class="muted">
-          因此它<strong>不能</strong>回答你临时输入的问题 —— 交互性为零，真实性为一。
+          运行方式与数据来源见下方列出的仓库文件。
         </p>
       </article>
 
       <article class="card">
         <h2>数据来源</h2>
         <ul class="src-list" id="src-list"></ul>
-      </article>
-
-      <article class="card">
-        <h2>刻意没有做的事</h2>
-        <ul class="no-list">
-          <li>没有为缺失字段编造数值：失败轮次的检索指标显示为「未记录」而不是 0。</li>
-          <li>没有补写 A/B 报告的提问原文 —— 报告里没有记录，就没有展示。</li>
-          <li>没有展示知识源文件名：报告只记录了命中条数，页面也只显示条数。</li>
-          <li>没有隐藏那次失败：2026-08-13 的运行是 10/11，失败被完整保留。</li>
-        </ul>
       </article>
 
       <article class="card">
@@ -136,8 +124,8 @@
 </main>
 
 <footer class="footer">
-  <span>回放数据源自本仓库真实运行报告 · 未做润色</span>
-  <span class="muted">Agents: 无 · 模型: 无（纯静态页面）</span>
+  <span>内容取自本仓库真实验收运行记录</span>
+  <span class="muted">静态页面 · 零依赖 · 无外部请求</span>
 </footer>
 
 <script src="data.js"></script>

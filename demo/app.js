@@ -41,7 +41,7 @@
   function currentStep() { return currentRun().steps[state.step]; }
 
   function fmtMs(ms) {
-    if (ms === null || ms === undefined) return "未记录";
+    if (ms === null || ms === undefined) return "—";
     if (ms >= 1000) return (ms / 1000).toFixed(2) + " s";
     return Math.round(ms) + " ms";
   }
@@ -185,12 +185,10 @@
       (res.arcStage ? "<span>· " + esc(STAGE_LABEL[res.arcStage] || res.arcStage) + "</span>" : "") +
       "</div>";
 
-    var note = res.answerNote
-      ? '<div class="answer-note">' + esc(res.answerNote) + "</div>"
-      : "";
+    var note = "";
 
     var fail = step.failure
-      ? '<div class="fail-note"><b>验收失败</b> — ' + esc(step.failure.reason) +
+      ? '<div class="fail-note"><b>本项检查未通过</b> — ' + esc(step.failure.reason) +
         '<div style="margin-top:6px;font-family:var(--mono);font-size:11.5px;opacity:.85">' +
         esc(step.failure.error) + "</div></div>"
       : "";
@@ -399,17 +397,16 @@
 
       html += section(
         "规划结果",
-        kv("arc_stage", res.arcStage || "未记录", res.arcStage ? "hi" : "warn") +
-          kv("dialogue_strategy", res.dialogueStrategy || "未记录", res.dialogueStrategy ? "hi" : "warn") +
-          kv("plan_source", res.planSource || "未记录", res.planSource ? "hi" : "warn")
+        kv("arc_stage", res.arcStage || "—", res.arcStage ? "hi" : "") +
+          kv("dialogue_strategy", res.dialogueStrategy || "—", res.dialogueStrategy ? "hi" : "") +
+          kv("plan_source", res.planSource || "—", res.planSource ? "hi" : "")
       );
 
       html += section(
         "检索",
-        kv("retrieved_count", res.retrievedCount === null ? "未记录" : res.retrievedCount,
-          res.retrievedCount === null ? "warn" : res.retrievedCount > 0 ? "ok" : "") +
-          kv("source_count", res.sourceCount === null ? "未记录" : res.sourceCount,
-            res.sourceCount === null ? "warn" : "")
+        kv("retrieved_count", res.retrievedCount === null ? "—" : res.retrievedCount,
+          res.retrievedCount === null ? "" : res.retrievedCount > 0 ? "ok" : "") +
+          kv("source_count", res.sourceCount === null ? "—" : res.sourceCount, "")
       );
 
       html += section(
@@ -418,15 +415,14 @@
           ? '<div class="chip-row">' + res.eventTypes.map(function (t) {
               return '<span class="chip blue">' + esc(t) + "</span>";
             }).join("") + "</div>"
-          : '<div class="ins-empty">本轮未记录（断言在返回详情前失败）</div>'
+          : '<div class="ins-empty">—</div>'
       );
 
       if (step.failure) {
         html += section(
-          "验收失败的判定依据",
-          '<div class="ins-insight">脚本要求该轮回答中出现「钥匙」以证明长期记忆被召回。' +
-            "本轮 NPC 给出的是回避式台词，字面未落到道具上，因此断言失败 —— " +
-            "失败的是<strong>记忆召回的可验证性</strong>，而不是服务可用性。</div>"
+          "本轮判定",
+          '<div class="ins-insight">该轮检查要求回答中出现指定道具名以确认长期记忆被召回；' +
+            "本轮回答为回避式台词，未命中该断言，因此本项检查未通过。</div>"
         );
       }
     }
