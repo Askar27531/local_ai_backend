@@ -4,6 +4,12 @@ A monolithic AI NPC runtime for a Unity exploration RPG (《归潮之岛》 / Gu
 
 > Detailed Chinese startup and operations guide: [README_启动说明.md](README_启动说明.md)
 
+## Replay demo
+
+**▶ [Open the recorded replay demo](https://askar27531.github.io/local_ai_backend/)** — a static GitHub Pages site that replays real acceptance runs: actual `qwen3` dialogue, per-turn character arc stage, dialogue strategy, plan source, retrieval counts, latency, and the NDJSON event sequence.
+
+It is deliberately **replay-only**: no live model, no API keys, no backend to keep alive. Every displayed value is traceable to a run report in this repository, including an honest 10/11 run in which long-term memory recall failed a strict assertion. See [`demo/`](demo/) for the data sources and honesty rules.
+
 ## Features
 
 - **Single Unity dialogue endpoint** — `POST /v1/npc/chat/stream` with NDJSON streaming.
@@ -38,7 +44,8 @@ npc_app/              # NPC runtime (API, dialogue, retrieval, memory, tests)
   tests/              # unit + acceptance-helper tests
 game_docs/            # world lore, characters, quests, and knowledge assets
 scripts/              # ingestion, validation, retrieval diagnostics, acceptance
-.github/workflows/    # NPC quality gate (CI)
+demo/                 # static replay-only showcase (GitHub Pages)
+.github/workflows/    # NPC quality gate (CI) and Pages deployment
 ```
 
 ## Requirements
@@ -84,6 +91,7 @@ See [README_启动说明.md](README_启动说明.md) for the full setup, configu
 
 ## Documentation
 
+- [demo/](demo/) — replay-only showcase of recorded runs, and its honesty rules
 - [README_启动说明.md](README_启动说明.md) — Chinese startup and operations guide
 - [CHANGELOG.md](CHANGELOG.md) — version history
 - [PROJECT_BOUNDARIES.md](PROJECT_BOUNDARIES.md) — product scope and dependency direction
