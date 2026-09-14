@@ -19,6 +19,17 @@ The tradeoff is explicit: **the page cannot answer questions you type.** Interac
 
 No build step, no bundler, no framework, no runtime dependencies. Opening `index.html` directly from disk works.
 
+## Deep links
+
+The URL hash selects what is shown, so a specific acceptance turn can be linked and shared directly:
+
+```text
+#run=0&step=3    # first run, the guarded Subject 07 turn
+#run=1&step=5    # second run, the failed long-term-memory turn
+```
+
+`run` is 0-based over the two recorded runs; `step` is 0-based over that run's 11 checks. Out-of-range values are clamped to the valid range.
+
 ## Data sources
 
 Three views are backed by real reports:
