@@ -518,12 +518,29 @@
 
   /* ------------------------------ 启动 ------------------------------ */
 
+  /* 支持 #run=N&step=M 深链，便于直接分享某一轮 */
+  function parseHash() {
+    var m = /(?:^|[#&])run=(\d+)/.exec(location.hash);
+    var s = /(?:^|[#&])step=(\d+)/.exec(location.hash);
+    if (m) state.run = Math.min(Math.max(parseInt(m[1], 10), 0), DATA.runs.length - 1);
+    if (s) {
+      var max = DATA.runs[state.run].steps.length - 1;
+      state.step = Math.min(Math.max(parseInt(s[1], 10), 0), max);
+    }
+  }
+
+  function syncHash() {
+    if (!window.history || !history.replaceState) return;
+    history.replaceState(null, "", "#run=" + state.run + "&step=" + state.step);
+  }
+
   function renderAll() {
     renderRunSwitch();
     renderStepList();
     renderChat();
     renderInspector();
     renderControls();
+    syncHash();
   }
 
   function init() {
@@ -535,6 +552,7 @@
     renderVoices();
     bindTabs();
     bindControls();
+    parseHash();
     renderAll();
   }
 
