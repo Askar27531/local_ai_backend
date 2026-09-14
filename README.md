@@ -2,17 +2,18 @@
 
 面向 Unity 探索 RPG 的单体 AI NPC Runtime，提供角色对话、剧情知识门控、Milvus RAG 检索、长期记忆和 NDJSON 流式输出。
 
-## 回放演示
+## 验收回放演示
 
-**▶ [在线回放 Demo](https://askar27531.github.io/local_ai_backend/)**
+**▶ [在浏览器中查看](https://askar27531.github.io/local_ai_backend/)**
 
-一个静态 GitHub Pages 站点，回放两次真实验收运行的完整记录：真实 `qwen3` 台词、逐轮角色阶段、对话策略、规划来源、检索条数、延迟，以及 NDJSON 事件序列；另含 7 个 NPC 的 22 条真实声线样本。
+展示 NPC Runtime 的真实验收结果：完整对话记录、逐轮角色阶段、对话策略、规划来源、检索条数、延迟与 NDJSON 事件序列，另有 7 个 NPC 的 22 条声线样本。支持直接定位到任意一轮，例如 [`#run=0&step=3`](https://askar27531.github.io/local_ai_backend/#run=0&step=3) 的剧情门控，或 [`#run=0&step=7`](https://askar27531.github.io/local_ai_backend/#run=0&step=7) 的角色阶段推进。
 
-它刻意做成**纯回放**：没有在线模型、没有 API Key、没有需要维持的后端。页面上每个数值都能在仓库的运行报告中核对 —— 包括一次诚实的 10/11 运行（长期记忆指代回忆未通过严格断言）。数据来源与诚实规则见 [`demo/`](demo/)。
+实现方式与数据来源见 [`demo/`](demo/)。
 
 ## 目录
 
-- [产品边界](#产品边界)
+- [验收回放演示](#验收回放演示)
+- [项目组成](#项目组成)
 - [功能特性](#功能特性)
 - [技术栈](#技术栈)
 - [仓库结构](#仓库结构)
@@ -25,17 +26,15 @@
 - [常见问题](#常见问题)
 - [文档索引](#文档索引)
 
-## 产品边界
-
-本仓库只包含：
+## 项目组成
 
 - `npc_app/`：NPC Runtime、API、记忆、检索与核心测试；
 - `game_docs/`：世界观、角色、任务和知识资产；
 - `scripts/`：知识入库、内容校验和后端检索诊断；
-- `demo/`：回放式展示站点（静态、只读）；
+- `demo/`：验收回放演示站点；
 - `.github/`：NPC 质量门与 Pages 部署。
 
-通用助手、Skill Agent、代码写回和游戏生产 Agent 已移出本仓库。完整边界与 `demo/` 的约束参见 [PROJECT_BOUNDARIES.md](PROJECT_BOUNDARIES.md)。
+本仓库聚焦 NPC Runtime 这一条产品主线，范围与依赖方向参见 [PROJECT_BOUNDARIES.md](PROJECT_BOUNDARIES.md)。
 
 ## 功能特性
 
@@ -73,7 +72,7 @@ npc_app/              # NPC Runtime：API、对话、检索、记忆与测试
   tests/              # 单元测试与验收入口测试
 game_docs/            # 世界观、角色、任务和知识资产
 scripts/              # 知识入库、内容校验、检索诊断、真实验收
-demo/                 # 静态回放展示站点（GitHub Pages）
+demo/                 # 验收回放演示站点（GitHub Pages）
 .github/workflows/    # NPC 质量门（CI）与 Pages 部署
 ```
 
@@ -81,13 +80,13 @@ demo/                 # 静态回放展示站点（GitHub Pages）
 
 ```text
 Unity 客户端 ──> npc_app API ──> dialogue / 检索 / 记忆 ──> PostgreSQL / Ollama / Milvus
-demo（静态只读） ──> 已提交的运行报告
+demo（验收回放） ──> 运行报告
 ```
 
 数据职责边界：
 
-- **PostgreSQL** 是业务事实来源：账号凭据、玩家与 NPC 的线程归属、完整问答、线程摘要和结构化长期记忆。它不保存账号停用状态、展示标题、软删除、模型审计、历史检索来源，以及可以由线程推导的重复用户 / NPC 字段。
-- **Milvus** 只保存可重建的语义检索索引。向量服务异常不会导致已确认的业务数据丢失。
+- **PostgreSQL** 是业务事实来源，保存账号凭据、玩家与 NPC 的线程归属、完整问答、线程摘要和结构化长期记忆。Schema 保持最小化：只保留 Runtime 必需字段，可由线程推导的重复用户 / NPC 字段不落库。
+- **Milvus** 保存可重建的语义检索索引，与业务事实解耦 —— 向量服务异常不会导致已确认的业务数据丢失。
 
 ## 运行环境
 
@@ -111,7 +110,7 @@ python -m pip install -r requirements-dev.txt
 
 项目根目录的 `.env` 是唯一的本地运行配置文件，包含认证、PostgreSQL、Ollama、模型、Milvus 和记忆配置。按本机环境修改其中的地址与凭据。
 
-`.env` 含有密钥、不进入 Git，因此仓库不再维护会过期的示例副本。本地 PostgreSQL 示例：
+`.env` 含有密钥，不进入 Git。本地 PostgreSQL 连接示例：
 
 ```env
 NPC_DATABASE_URL=postgresql+psycopg://ai_npc_app:<URL编码后的密码>@127.0.0.1:5432/AI_NPC_Database
@@ -140,7 +139,7 @@ python scripts\validate_game_docs_for_rag.py
 python scripts\ingest_game_docs_to_milvus.py
 ```
 
-> 入库脚本会**重建同名 collection**，只适用于当前开发工作流。
+> 注意：入库脚本会**重建同名 collection**。
 
 ### 4. 初始化长期记忆 collection
 
@@ -179,7 +178,7 @@ POST /auth/register
 POST /auth/login
 ```
 
-注册或登录返回 Bearer Token，Unity 调用 NPC 对话接口时携带该 Token。线程创建、归属校验、最近对话和长期记忆均由 NPC Runtime 内部维护，不暴露旧调试 UI 的线程列表与聊天记录接口。
+注册或登录返回 Bearer Token，Unity 调用 NPC 对话接口时携带该 Token。线程创建、归属校验、最近对话和长期记忆均由 NPC Runtime 内部维护。
 
 ### Unity v1 对话接口
 
@@ -219,7 +218,7 @@ Content-Type: application/json
 }
 ```
 
-Unity **不再传入**以下 Runtime 控制字段：
+以下 Runtime 控制字段由服务端决定，Unity 无需传入：
 
 - `player_id`：从认证用户得到；
 - `npc_interaction_count`：从服务端线程历史计算；
@@ -244,7 +243,7 @@ Unity **不再传入**以下 Runtime 控制字段：
 }
 ```
 
-后端不会自动换用其他线程，也不会新建线程。Unity 应为不同 NPC 分别保存服务端返回的 `thread_id`，修正映射后重新请求。只有**不传** `thread_id` 时，后端才会复用当前用户与该 NPC 最近的线程，或在不存在时创建线程。
+这是一条刻意设计的严格契约：不匹配时直接拒绝，而不是静默换用其他线程或新建线程，从而避免上下文串到别的角色。Unity 应为不同 NPC 分别保存服务端返回的 `thread_id`，修正映射后重新请求。只有**不传** `thread_id` 时，后端才会复用当前用户与该 NPC 最近的线程，或在不存在时创建线程。
 
 ### NDJSON 事件
 
@@ -274,7 +273,7 @@ Content-Type: application/x-ndjson; charset=utf-8
 NPC_TRACE_ENABLED=true
 ```
 
-Trace 记录意图来源、角色阶段、对话策略、检索与生成耗时、选中的知识 / 记忆 ID、Prompt 字符数、答案守卫结果和失败阶段。第一版固定**不记录**认证凭证、完整 Prompt、玩家问题或 NPC 回答；Context Manifest 也不会作为 NDJSON 事件暴露给 Unity。
+Trace 记录意图来源、角色阶段、对话策略、检索与生成耗时、选中的知识 / 记忆 ID、Prompt 字符数、答案守卫结果和失败阶段。出于隐私安全考虑，Trace 不含认证凭证、完整 Prompt、玩家问题或 NPC 回答；Context Manifest 仅用于服务端诊断，不通过 NDJSON 暴露给 Unity。
 
 ## Runtime 结构
 
@@ -286,7 +285,7 @@ npc_app/
 ├─ trace.py             # 不记录对话内容的 Turn Trace
 ├─ utils.py             # 文本、LLM 输出和 JSON 公共处理
 ├─ dialogue/
-│  ├─ orchestrator.py   # 单轮直接编排，不依赖 LangGraph
+│  ├─ orchestrator.py   # 单轮直接编排的对话主流程
 │  ├─ intent.py         # 意图、安全规则、剧情门控与 LLM 兜底
 │  ├─ planner.py        # 角色阶段和单轮策略
 │  ├─ context.py        # Context 选择与字符预算
@@ -300,7 +299,7 @@ npc_app/
 └─ tests/
 ```
 
-旧的 `npc_rag_service.py`、`npc_intent_service.py` 和 `npc_context_planner_service.py` 已移除，内部代码统一引用 `dialogue/`。旧接口 `/npc/chat/stream` 也已删除。NPC 端到端协议测试放在 Unity 项目中维护；本仓库保留 Runtime 单元测试、离线质量评测和检索诊断。
+内部实现统一收敛到 `dialogue/`，Unity 通过唯一的 `/v1/npc/chat/stream` 接口交互。本仓库维护 Runtime 单元测试、离线质量评测与检索诊断；Unity 侧的协议集成测试在 Unity 项目中维护。
 
 ## 质量门
 
@@ -337,7 +336,7 @@ python scripts\run_real_npc_acceptance.py --output reports\npc_real_acceptance
 
 ## 常见问题
 
-### `/health` 正常但无法对话
+### 对话依赖排查
 
 访问 `/ready` 定位：
 
@@ -345,31 +344,31 @@ python scripts\run_real_npc_acceptance.py --output reports\npc_real_acceptance
 - `ollama`：检查地址和 `ollama list`；
 - `milvus`：检查服务、Token、collection 和入库结果。
 
-### 修改文档后回答没有变化
+### 知识文档的更新与入库
 
-Markdown 不会自动进入 Milvus，需要重新执行入库脚本。
+Markdown 不会自动进入 Milvus，文档变更后需重新执行入库脚本。
 
-### 测试在干净环境（CI）下于收集阶段失败
+### 在无 `.env` 的环境中运行测试
 
-`npc_app/database.py` 在**导入阶段**就要求 `NPC_DATABASE_URL`。CI 上没有本地 `.env`，因此测试依赖 `npc_app/tests/conftest.py` 提供兜底配置。在无 `.env` 环境复现测试时请保留该文件。
+`npc_app/tests/conftest.py` 会先加载本地 `.env`，并在缺失时为 `NPC_DATABASE_URL` 提供测试兜底值，因此测试套件在 CI 等干净环境中可直接运行。重构或迁移测试目录时请保留该文件。
 
-### NPC 泄露高等级剧情
+### 校验剧情门控是否生效
 
-依次检查：
+门控由多层共同保证，按顺序核对：
 
-1. 文档章节的 `解锁N`；
-2. `npc_knowledge_matrix_v03.json`；
-3. `dialogue/intent.py` 与 `dialogue_config.json` 中的剧情门控；
+1. 文档章节的 `解锁N` 分级；
+2. `npc_knowledge_matrix_v03.json` 的角色知识分配；
+3. `dialogue/intent.py` 与 `dialogue_config.json` 中的门控规则；
 4. `npc_app/tests/test_context_compiler.py` 的越权用例；
-5. 重新入库后的真实检索评测。
+5. 重新入库后运行真实检索评测。
 
 ## 文档索引
 
-- [`demo/`](demo/) —— 回放站点的数据来源与诚实规则
+- [`demo/`](demo/) —— 演示站点的数据来源与实现说明
 - [CHANGELOG.md](CHANGELOG.md) —— 版本历史
 - [PROJECT_BOUNDARIES.md](PROJECT_BOUNDARIES.md) —— 产品范围与依赖方向
-- [`game_docs/non_vectorized/A_README_使用说明.md`](game_docs/non_vectorized/A_README_使用说明.md) —— 知识库怎么写、怎么入库、怎么避免 NPC 乱说
+- [`game_docs/non_vectorized/A_README_使用说明.md`](game_docs/non_vectorized/A_README_使用说明.md) —— 知识库的编写、分级与入库规范
 
 ## 版本
 
-阶段 1.5（Lean Unity Runtime）已完成，当前版本为 `v0.3.0`。版本历史参见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本 `v0.3.0`，版本历史参见 [CHANGELOG.md](CHANGELOG.md)。
